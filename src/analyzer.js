@@ -23,6 +23,11 @@ function deriveHoursRemaining(aircraft) {
   return null;
 }
 
+function deriveAnnualDaysRemaining(aircraft) {
+  const explicit = toNumber(aircraft.annualDaysRemaining);
+  return explicit !== null ? explicit : null;
+}
+
 function getStatusColor(hoursRemaining) {
   if (hoursRemaining === null) {
     return "gray";
@@ -39,9 +44,17 @@ function getStatusColor(hoursRemaining) {
   return "green";
 }
 
+function isDeferredSquawk(squawk) {
+  const status = String(squawk?.status || "").trim().toLowerCase();
+  const description = String(squawk?.description || "").trim().toLowerCase();
+  return status.includes("defer") || description.includes("deferred");
+}
+
 function buildRecommendations(sortedAircraft) {
   const recommendations = [];
-  const mostAvailable = sortedAircraft.find((item) => item.hoursRemaining !== null);
+  const mostAvailable = [...sortedAircraft]
+    .filter((item) => item.hoursRemaining !== null)
+    .sort((left, right) => right.hoursRemaining - left.hoursRemaining)[0];
   const constrained = sortedAircraft.filter(
     (item) => item.hoursRemaining !== null && item.hoursRemaining <= 10
   );
@@ -63,6 +76,23 @@ function buildRecommendations(sortedAircraft) {
       `Two or more aircraft are within 10 hours of inspection; avoid over-scheduling them together.`
     );
   }
+
+  const squawked = sortedAircraft.filter((item) => item.hasActiveSquawk);
+  if (squawked.length > 0) {
+    recommendations.push(
+      `${squawked.length} aircraft currently have unresolved squawks; check dispatchability before scheduling them heavily.`
+    );
+  }
+
+  const annualCritical = sortedAircraft
+    .filter((item) => item.annualDaysRemaining !== null && item.annualDaysRemaining <= 30)
+    .slice(0, 2);
+
+  annualCritical.forEach((item) => {
+    recommendations.push(
+      `Aircraft ${item.tailNumber} has an annual due window inside ${item.annualDaysRemaining.toFixed(0)} days; plan maintenance downtime now.`
+    );
+  });
 
   return recommendations;
 }
@@ -95,13 +125,45 @@ function buildSpacingRisk(sortedAircraft) {
 function analyzeAircraft(rawAircraft = []) {
   const aircraft = rawAircraft.map((entry) => {
     const hoursRemaining = deriveHoursRemaining(entry);
+    const annualDaysRemaining = deriveAnnualDaysRemaining(entry);
+    const unresolvedSquawks = Array.isArray(entry.unresolvedSquawks) ? entry.unresolvedSquawks : [];
+    const activeSquawks = unresolvedSquawks.filter((item) => !isDeferredSquawk(item));
+    const deferredSquawks = unresolvedSquawks.filter((item) => isDeferredSquawk(item));
+    const maintenanceItems = Array.isArray(entry.maintenanceItems) ? entry.maintenanceItems : [];
+    const scheduledMaintenance = Array.isArray(entry.scheduledMaintenance)
+      ? entry.scheduledMaintenance
+      : [];
+    const upcomingMaintenanceItems = maintenanceItems
+      .filter((item) => item.remainingValue !== null)
+      .sort((left, right) => {
+        if (left.remainingUnit === right.remainingUnit) {
+          return left.remainingValue - right.remainingValue;
+        }
+        if (left.remainingUnit === "hours") {
+          return -1;
+        }
+        if (right.remainingUnit === "hours") {
+          return 1;
+        }
+        return 0;
+      })
+      .slice(0, 5);
 
     return {
       ...entry,
       currentTime: toNumber(entry.currentTime),
+      currentHobbs: toNumber(entry.currentHobbs),
       last100Hour: toNumber(entry.last100Hour),
       next100HourDue: toNumber(entry.next100HourDue),
       hoursRemaining,
+      annualDaysRemaining,
+      unresolvedSquawks,
+      activeSquawks,
+      deferredSquawks,
+      maintenanceItems,
+      scheduledMaintenance,
+      upcomingMaintenanceItems,
+      hasActiveSquawk: activeSquawks.length > 0,
       statusColor: getStatusColor(hoursRemaining),
       isOverdue: hoursRemaining !== null && hoursRemaining < 0
     };
@@ -124,7 +186,12 @@ function analyzeAircraft(rawAircraft = []) {
       overdue: aircraft.filter((item) => item.isOverdue).length,
       critical: aircraft.filter(
         (item) => item.hoursRemaining !== null && item.hoursRemaining < 5
-      ).length
+      ).length,
+      squawked: aircraft.filter((item) => item.hasActiveSquawk).length,
+      annualCritical: aircraft.filter(
+        (item) => item.annualDaysRemaining !== null && item.annualDaysRemaining <= 30
+      ).length,
+      scheduledMaintenance: aircraft.filter((item) => item.scheduledMaintenance.length > 0).length
     },
     spacingRisk: buildSpacingRisk(sortedAircraft),
     recommendations: buildRecommendations(sortedAircraft),

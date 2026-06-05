@@ -54,9 +54,11 @@ chmod 600 .env
    - `FBO_MAINTENANCE_URL`
    - `FBO_USERNAME`
    - `FBO_PASSWORD`
+   - optional `MYFBO_AIRPORT` if the maintenance report must be filtered to a specific airport before opening
+   - optional `MYFBO_BASE_FILTER` if you want to keep only aircraft based at one location such as `KORL`
    - `PLAYWRIGHT_HEADLESS=false` if MyFBO will not work in headless mode
    - optional `MYFBO_ORG_ID` if you use the generic MyFBO subscriber login page
-   - optional `MYFBO_REPORT_TYPE=summary` or `detailed`
+   - optional `MYFBO_REPORT_TYPE=summary` or `detailed` with `detailed` recommended for squawks, annuals, and other maintenance items
    - optional `DASHBOARD_BASIC_AUTH_USER` and `DASHBOARD_BASIC_AUTH_PASS`
 
 ## Running Manually
@@ -133,6 +135,23 @@ If your school uses the generic MyFBO subscriber login page:
 
 - set `FBO_LOGIN_URL=https://www.myfbo.com/myfbo/login.htm`
 - set `MYFBO_ORG_ID` to your four-letter subscriber identifier
+
+If your school uses a MyFBO entry URL like `https://myfbo.com/entry/entry.asp?fbo=xxxx`:
+
+- set `FBO_LOGIN_URL` to that exact entry URL
+- set `FBO_USERNAME` to the email field used on that screen
+- set `MYFBO_AIRPORT` if your recorded flow chooses an airport in `select[name="apt"]`
+- set `MYFBO_BASE_FILTER=KORL` if you only want aircraft based at `KORL`
+- the scraper now follows the recorded frame flow: `Online System` -> `Manage` -> `Resource Mgmt` -> `Maintenance` -> airport select -> `Summary` or `Detailed`
+
+For the richest data set, use `MYFBO_REPORT_TYPE=detailed`. That mode allows the parser to capture:
+
+- aircraft base
+- 100-hour inspection due values
+- annual inspection due values
+- other calendar and tach-based maintenance items
+- scheduled maintenance blocks
+- unresolved squawks
 
 The current extractor is designed to get you close, not to be perfect without a live sample page. Once you can log in, the most likely final adjustment will be inside `extractAircraftData()` to match the exact table headers and row layout shown by your MyFBO account.
 
