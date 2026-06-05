@@ -94,6 +94,15 @@ function buildRecommendations(sortedAircraft) {
     );
   });
 
+  const scheduledAircraft = sortedAircraft.filter((item) => item.scheduledMaintenance.length > 0);
+  scheduledAircraft.slice(0, 2).forEach((item) => {
+    const firstSchedule = item.scheduledMaintenance[0];
+    const scheduleNote = firstSchedule?.remarks || "maintenance scheduled";
+    recommendations.push(
+      `Aircraft ${item.tailNumber} is already scheduled for maintenance; ${scheduleNote}.`
+    );
+  });
+
   return recommendations;
 }
 

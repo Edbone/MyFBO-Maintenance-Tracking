@@ -79,28 +79,6 @@
 
    
 
-        <section class="top-grid">
-          <article class="tracker-panel notes-panel">
-            <div class="panel-header">
-              <h2>Dispatch Notes</h2>
-              <span class="panel-note">Shift notes and scheduling cautions.</span>
-            </div>
-            <label class="notes-label" for="dispatch-notes">Notes</label>
-            <textarea id="dispatch-notes" class="notes-input" placeholder="Dispatch notes, maintenance watch items, and schedule cautions."></textarea>
-            <div class="notes-footer">
-              <span id="notes-status">Saved locally in this browser.</span>
-            </div>
-          </article>
-
-          <article class="tracker-panel compact-status-panel">
-            <div class="panel-header">
-              <h2>Live Snapshot</h2>
-              <span class="panel-note">Fast watch items.</span>
-            </div>
-            <div id="snapshot-list" class="snapshot-list"></div>
-          </article>
-        </section>
-
         <section class="tracker-panel">
           <div class="panel-header">
             <h2>KORL Fleet Data</h2>
@@ -150,12 +128,8 @@
       const statusEl = document.getElementById("system-status");
       const updatedEl = document.getElementById("last-updated");
       const errorEl = document.getElementById("error-message");
-      const notesInput = document.getElementById("dispatch-notes");
-      const notesStatus = document.getElementById("notes-status");
-      const snapshotList = document.getElementById("snapshot-list");
       const tabButtons = Array.from(document.querySelectorAll(".view-tab"));
       const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
-      const NOTES_KEY = "aoa_korl_dispatch_notes";
 
       function formatTimestamp(value) {
         if (!value) return "No successful updates yet";
@@ -191,19 +165,6 @@
         }).join("");
       }
 
-      function buildSnapshot(analysis) {
-        const aircraft = analysis.aircraft || [];
-        const urgent100 = aircraft.find((item) => item.hoursRemaining !== null);
-        const activeSquawk = aircraft.find((item) => item.hasActiveSquawk);
-        const annualSoon = aircraft.find((item) => item.annualDaysRemaining !== null && item.annualDaysRemaining <= 180);
-
-        return [
-          urgent100 ? `<div class="snapshot-card"><span>Closest 100-hour</span><strong>${urgent100.tailNumber}</strong><p>${urgent100.hoursRemaining.toFixed(1)} hours remaining</p></div>` : "",
-          activeSquawk ? `<div class="snapshot-card"><span>Active squawk</span><strong>${activeSquawk.tailNumber}</strong><p>${(activeSquawk.activeSquawks || []).length} open item(s)</p></div>` : "",
-          annualSoon ? `<div class="snapshot-card"><span>Next annual watch</span><strong>${annualSoon.tailNumber}</strong><p>${annualSoon.annualDaysRemaining.toFixed(0)} days remaining</p></div>` : ""
-        ].filter(Boolean).join("") || `<div class="message-card neutral">No current watch items.</div>`;
-      }
-
       function buildFocusCards(analysis) {
         const aircraft = analysis.aircraft || [];
         const with100 = aircraft.filter((item) => item.hoursRemaining !== null);
@@ -211,6 +172,7 @@
         const mostAvailable = [...with100].sort((a, b) => b.hoursRemaining - a.hoursRemaining)[0];
         const activeSquawk = aircraft.find((item) => item.hasActiveSquawk);
         const annualSoon = aircraft.find((item) => item.annualDaysRemaining !== null && item.annualDaysRemaining <= 180);
+        const scheduledAircraft = aircraft.find((item) => (item.scheduledMaintenance || []).length > 0);
 
         const cards = [
           urgent100
@@ -222,24 +184,15 @@
           annualSoon
             ? `<article class="focus-card focus-warn"><span>Annual Watch</span><strong>${annualSoon.tailNumber}</strong><p>${formatDays(annualSoon.annualDaysRemaining)} remaining</p></article>`
             : `<article class="focus-card"><span>Annual Watch</span><strong>Stable</strong><p>No annuals currently inside the watch window.</p></article>`,
+          scheduledAircraft
+            ? `<article class="focus-card focus-alert"><span>Scheduled Maintenance</span><strong>${scheduledAircraft.tailNumber}</strong><p>${scheduledAircraft.scheduledMaintenance[0].remarks || "Maintenance scheduled"}</p></article>`
+            : `<article class="focus-card"><span>Scheduled Maintenance</span><strong>None</strong><p>No aircraft are currently scheduled for maintenance.</p></article>`,
           mostAvailable
             ? `<article class="focus-card focus-good"><span>Most Available</span><strong>${mostAvailable.tailNumber}</strong><p>${formatHours(mostAvailable.hoursRemaining)} available</p></article>`
             : `<article class="focus-card"><span>Most Available</span><strong>No live item</strong><p>No 100-hour availability data yet.</p></article>`
         ];
 
         return cards.join("");
-      }
-
-      function restoreNotes() {
-        const saved = localStorage.getItem(NOTES_KEY);
-        if (saved) {
-          notesInput.value = saved;
-        }
-      }
-
-      function saveNotes() {
-        localStorage.setItem(NOTES_KEY, notesInput.value);
-        notesStatus.textContent = `Saved ${new Date().toLocaleTimeString()}`;
       }
 
       function lineupRow(aircraft) {
@@ -251,12 +204,17 @@
         const maxHours = 100;
         const clamped = Math.max(0, Math.min(maxHours, remaining));
         const markerLeft = `${(clamped / maxHours) * 100}%`;
+        const scheduled = aircraft.scheduledMaintenance || [];
+        const scheduleBadge = scheduled.length
+          ? `<span class="lineup-flag">Scheduled Mx</span>`
+          : "";
 
         return `
           <article class="lineup-row ${aircraft.statusColor}">
             <div class="lineup-meta">
               <strong>${aircraft.tailNumber}</strong>
               <span>${aircraft.aircraftType || "Aircraft"}</span>
+              ${scheduleBadge}
             </div>
             <div class="lineup-track">
               <div class="lineup-zones">
@@ -327,7 +285,10 @@
         return `
           <tr>
             <td><strong>${aircraft.tailNumber}</strong><span>${aircraft.aircraftType || ""}</span></td>
-            <td><span class="table-status ${aircraft.statusColor}">${aircraft.statusColor.toUpperCase()}</span></td>
+            <td>
+              <span class="table-status ${aircraft.statusColor}">${aircraft.statusColor.toUpperCase()}</span>
+              ${scheduled.length ? `<span class="table-flag">Scheduled Mx</span>` : ""}
+            </td>
             <td>${aircraft.currentTime ?? "N/A"}</td>
             <td>${formatHours(aircraft.hoursRemaining)}</td>
             <td>${formatDays(aircraft.annualDaysRemaining)}</td>
@@ -369,7 +330,6 @@
           ].join("");
 
           focusGrid.innerHTML = buildFocusCards(analysis);
-          snapshotList.innerHTML = buildSnapshot(analysis);
           spacingRisk.innerHTML = stackItems(
             analysis.spacingRisk,
             "No spacing conflicts are currently projected.",
@@ -397,8 +357,6 @@
         button.addEventListener("click", () => activateTab(button.dataset.tab));
       });
 
-      notesInput.addEventListener("input", saveNotes);
-      restoreNotes();
       activateTab("overview");
       loadDashboard();
       setInterval(loadDashboard, 60000);
