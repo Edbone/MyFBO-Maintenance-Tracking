@@ -15,6 +15,10 @@
           <span>Academy of Aviation</span>
         </div>
       </div>
+      <nav class="view-tabs" aria-label="Dashboard views">
+        <button class="view-tab active" type="button" data-tab="overview">Overview</button>
+        <button class="view-tab" type="button" data-tab="fleet">KORL Fleet Data</button>
+      </nav>
       <div class="header-status">
         <div class="header-status-item">
           <span class="header-status-label">Status</span>
@@ -28,14 +32,22 @@
     </header>
 
     <main class="page-shell">
-      <nav class="view-tabs" aria-label="Dashboard views">
-        <button class="view-tab active" type="button" data-tab="overview">Overview</button>
-        <button class="view-tab" type="button" data-tab="fleet">KORL Fleet Data</button>
-      </nav>
-
-      <section class="summary-grid" id="summary-grid"></section>
-
       <section class="tab-panel active" data-panel="overview">
+        <section class="tracker-panel lineup-panel">
+          <div class="panel-header">
+            <h2>100-Hour Lineup</h2>
+            <span class="panel-note">Aircraft closest to due are shown first.</span>
+          </div>
+          <div class="lineup-scale">
+            <span>Due now</span>
+            <span>5h</span>
+            <span>10h</span>
+            <span>20h</span>
+            <span>100h+</span>
+          </div>
+          <div id="inspection-lineup" class="inspection-lineup"></div>
+        </section>
+
         <section class="priority-board">
           <div class="priority-header">
             <div>
@@ -53,21 +65,6 @@
             <span class="panel-note">What dispatch should do next.</span>
           </div>
           <div id="recommendations" class="stack"></div>
-        </section>
-
-        <section class="tracker-panel lineup-panel">
-          <div class="panel-header">
-            <h2>100-Hour Lineup</h2>
-            <span class="panel-note">Aircraft closest to due are shown first.</span>
-          </div>
-          <div class="lineup-scale">
-            <span>Due now</span>
-            <span>5h</span>
-            <span>10h</span>
-            <span>20h</span>
-            <span>100h+</span>
-          </div>
-          <div id="inspection-lineup" class="inspection-lineup"></div>
         </section>
 
         <section class="top-grid">
@@ -102,6 +99,8 @@
       </section>
 
       <section class="tab-panel" data-panel="fleet">
+        <section class="summary-grid" id="summary-grid"></section>
+
         <section class="tracker-panel">
           <div class="panel-header">
             <h2>KORL Fleet Data</h2>
