@@ -1,0 +1,227 @@
+:root {
+  color-scheme: light;
+  --bg: #f4efe6;
+  --panel: rgba(255, 252, 247, 0.88);
+  --ink: #1f2933;
+  --muted: #5f6c7b;
+  --line: rgba(31, 41, 51, 0.08);
+  --shadow: 0 18px 45px rgba(76, 59, 34, 0.12);
+  --green: #2d7a46;
+  --yellow: #d9a100;
+  --orange: #da6a1a;
+  --red: #b63d2f;
+  --gray: #6b7280;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(218, 172, 99, 0.28), transparent 32%),
+    linear-gradient(160deg, #f6f0e6 0%, #efe9de 55%, #e7e2d8 100%);
+}
+
+.app-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+h1, h2, h3, p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 10px;
+  font-size: clamp(2rem, 4vw, 3.6rem);
+  line-height: 0.96;
+}
+
+.subtitle,
+.panel-note,
+.status-card span,
+.metric-card span,
+.footer-note {
+  color: var(--muted);
+}
+
+.status-card,
+.panel,
+.metric-card,
+.aircraft-card,
+.message-card {
+  backdrop-filter: blur(12px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+.status-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.status-card strong {
+  display: block;
+  font-size: 1.4rem;
+  margin: 6px 0;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.metric-card {
+  padding: 18px;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.35rem;
+}
+
+.panel {
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.panel-header {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+}
+
+.stack {
+  display: grid;
+  gap: 12px;
+}
+
+.message-card {
+  padding: 14px 16px;
+}
+
+.message-card.high {
+  border-left: 6px solid var(--red);
+}
+
+.message-card.medium {
+  border-left: 6px solid var(--orange);
+}
+
+.message-card.neutral {
+  border-left: 6px solid var(--gray);
+}
+
+.aircraft-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.aircraft-card {
+  padding: 18px;
+  border-top-width: 10px;
+}
+
+.aircraft-card.green { border-top-color: var(--green); }
+.aircraft-card.yellow { border-top-color: var(--yellow); }
+.aircraft-card.orange { border-top-color: var(--orange); }
+.aircraft-card.red { border-top-color: var(--red); }
+.aircraft-card.gray { border-top-color: var(--gray); }
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.pill {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  background: rgba(31, 41, 51, 0.08);
+}
+
+dl {
+  margin: 14px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.tags span {
+  background: rgba(31, 41, 51, 0.08);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+
+.footer-note {
+  min-height: 24px;
+  padding: 0 4px 24px;
+}
+
+@media (max-width: 840px) {
+  .hero,
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

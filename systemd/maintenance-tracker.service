@@ -1,0 +1,22 @@
+[Unit]
+Description=Flight School Maintenance Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=mainttracker
+Group=mainttracker
+WorkingDirectory=/opt/maintenance-tracker
+EnvironmentFile=/opt/maintenance-tracker/.env
+ExecStart=/usr/bin/xvfb-run -a --server-args=-screen 0 1440x1200x24 /usr/bin/node /opt/maintenance-tracker/src/server.js
+Restart=on-failure
+RestartSec=10
+
+# Tighten these after validating your install and Playwright browser path needs.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,21 @@
+{
+  "name": "maintenance-tracker",
+  "version": "1.0.0",
+  "description": "Self-hosted aircraft maintenance tracking automation for flight schools.",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "scrape": "node src/scraper.js",
+    "server": "node src/server.js",
+    "start": "node src/server.js",
+    "dev:mock": "MOCK_MODE=true node src/server.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "playwright": "^1.52.0"
+  }
+}

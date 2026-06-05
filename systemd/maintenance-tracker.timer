@@ -1,0 +1,11 @@
+[Unit]
+Description=Run flight school maintenance scrape every 3 hours
+
+[Timer]
+OnBootSec=5m
+OnUnitActiveSec=3h
+Unit=maintenance-tracker-scrape.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target

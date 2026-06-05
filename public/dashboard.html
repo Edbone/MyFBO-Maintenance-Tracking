@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Aircraft Maintenance Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Flight School Maintenance</p>
+          <h1>100-Hour Inspection Spacing Dashboard</h1>
+          <p class="subtitle">Keep aircraft availability balanced and avoid multiple inspections landing at once.</p>
+        </div>
+        <div class="status-card">
+          <p>Status</p>
+          <strong id="system-status">Loading...</strong>
+          <span id="last-updated">Checking latest sync...</span>
+        </div>
+      </section>
+
+      <section class="summary-grid" id="summary-grid"></section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Spacing Risk</h2>
+          <span class="panel-note">Warnings are based on aircraft reaching inspection due windows close together.</span>
+        </div>
+        <div id="spacing-risk" class="stack"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Recommendations</h2>
+          <span class="panel-note">Use these to spread hours across the fleet more evenly.</span>
+        </div>
+        <div id="recommendations" class="stack"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Aircraft Status</h2>
+          <span class="panel-note">Green: over 20 hours, Yellow: 10-20, Orange: 5-10, Red: under 5 or overdue.</span>
+        </div>
+        <div id="aircraft-grid" class="aircraft-grid"></div>
+      </section>
+
+      <section class="footer-note">
+        <span id="error-message"></span>
+      </section>
+    </main>
+
+    <script>
+      const summaryGrid = document.getElementById("summary-grid");
+      const spacingRisk = document.getElementById("spacing-risk");
+      const recommendations = document.getElementById("recommendations");
+      const aircraftGrid = document.getElementById("aircraft-grid");
+      const statusEl = document.getElementById("system-status");
+      const updatedEl = document.getElementById("last-updated");
+      const errorEl = document.getElementById("error-message");
+
+      function formatTimestamp(value) {
+        if (!value) return "No successful updates yet";
+        return new Date(value).toLocaleString();
+      }
+
+      function metricCard(label, value) {
+        return `
+          <article class="metric-card">
+            <span>${label}</span>
+            <strong>${value}</strong>
+          </article>
+        `;
+      }
+
+      function stackItems(items, emptyText, className) {
+        if (!items || items.length === 0) {
+          return `<div class="message-card neutral">${emptyText}</div>`;
+        }
+
+        return items.map((item) => {
+          const body = typeof item === "string" ? item : item.message;
+          const tone = className || item.level || "neutral";
+          return `<div class="message-card ${tone}">${body}</div>`;
+        }).join("");
+      }
+
+      function aircraftCard(aircraft) {
+        const hours = aircraft.hoursRemaining === null ? "Unknown" : aircraft.hoursRemaining.toFixed(1);
+        const warnings = aircraft.warnings && aircraft.warnings.length
+          ? `<div class="tags">${aircraft.warnings.map((warning) => `<span>${warning}</span>`).join("")}</div>`
+          : "";
+
+        return `
+          <article class="aircraft-card ${aircraft.statusColor}">
+            <div class="card-top">
+              <h3>${aircraft.tailNumber}</h3>
+              <span class="pill">${aircraft.statusColor.toUpperCase()}</span>
+            </div>
+            <dl>
+              <div><dt>Current</dt><dd>${aircraft.currentTime ?? "N/A"}</dd></div>
+              <div><dt>Last 100</dt><dd>${aircraft.last100Hour ?? "N/A"}</dd></div>
+              <div><dt>Next Due</dt><dd>${aircraft.next100HourDue ?? "N/A"}</dd></div>
+              <div><dt>Remaining</dt><dd>${hours}</dd></div>
+            </dl>
+            ${warnings}
+          </article>
+        `;
+      }
+
+      async function loadDashboard() {
+        try {
+          const response = await fetch("/api/maintenance", { cache: "no-store" });
+          const state = await response.json();
+          const analysis = state.analysis || { totals: {}, spacingRisk: [], recommendations: [], aircraft: state.data || [] };
+
+          statusEl.textContent = state.status === "ok" ? `Healthy (${state.source})` : `Error (${state.source || "unknown"})`;
+          updatedEl.textContent = `Last success: ${formatTimestamp(state.lastSuccessfulUpdate)}`;
+          errorEl.textContent = state.error ? `Latest error: ${state.error}` : "";
+
+          summaryGrid.innerHTML = [
+            metricCard("Fleet Aircraft", analysis.totals.aircraft || 0),
+            metricCard("Critical / Overdue", `${analysis.totals.critical || 0} / ${analysis.totals.overdue || 0}`),
+            metricCard("Last Attempt", formatTimestamp(state.lastAttemptedUpdate)),
+            metricCard("Run Time", state.runDurationMs ? `${state.runDurationMs} ms` : "N/A")
+          ].join("");
+
+          spacingRisk.innerHTML = stackItems(
+            analysis.spacingRisk,
+            "No spacing conflicts are currently projected.",
+            "neutral"
+          );
+          recommendations.innerHTML = stackItems(
+            analysis.recommendations,
+            "No recommendations available yet.",
+            "neutral"
+          );
+          aircraftGrid.innerHTML = (analysis.aircraft || []).map(aircraftCard).join("");
+        } catch (error) {
+          statusEl.textContent = "Dashboard load failed";
+          updatedEl.textContent = "Unable to reach API";
+          errorEl.textContent = error.message;
+        }
+      }
+
+      loadDashboard();
+      setInterval(loadDashboard, 60000);
+    </script>
+  </body>
+</html>
